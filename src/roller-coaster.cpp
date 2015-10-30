@@ -1,4 +1,3 @@
-#include <ctime>
 #include <vector>
 #include <string>
 #include <chrono>
@@ -9,10 +8,11 @@
 using namespace std;
 using namespace std::chrono;
 
-high_resolution_clock::time_point s;
 pthread_mutex_t output, queuing;
 pthread_cond_t running_cond, playing_cond;
 bool finish = false;
+milliseconds wait_time;
+high_resolution_clock::time_point s;
 
 string suffix(const int n)
 {
@@ -28,9 +28,11 @@ void print(const string str)
     pthread_mutex_unlock(&output);
 }
 
-void time()
+milliseconds time(high_resolution_clock::time_point s)
 {
-    cout << duration_cast<milliseconds>(high_resolution_clock::now() - s).count() << " millisec ";
+    auto t = duration_cast<milliseconds>(high_resolution_clock::now() - s);
+    cout << t.count() << " millisec ";
+    return t;
 }
 
 class RollerCoaster;
@@ -54,16 +56,16 @@ public:
 
 class RollerCoaster {
 public:
-    int capacity, time_interval, cycles, real_cycles;
+    int capacity, time_interval, cycles, runs;
     vector<Passenger> seats;
-    RollerCoaster(int sz, int t, int cc) : capacity(sz), time_interval(t), cycles(cc) { real_cycles = 0; }
+    RollerCoaster(int sz, int t, int cc) : capacity(sz), time_interval(t), cycles(cc) { runs = 0; }
 
     void run() {
         pthread_mutex_lock(&queuing);
         while (seats.size() != capacity)
             pthread_cond_wait(&running_cond, &queuing);
-        cout << "car depatures at "; time(); print(passengers_name() + "passengers are in the car");
-        real_cycles++;
+        cout << "car depatures at " << time(s).count() << " millisec "; print(passengers_name() + "passengers are in the car");
+        runs++;
         pthread_mutex_unlock(&queuing);
         usleep(time_interval * 1000);
         release();
@@ -71,13 +73,16 @@ public:
 
     void enqueue(Passenger p) {
         pthread_mutex_lock(&queuing);
-        if (real_cycles >= cycles) {
+        if (runs >= cycles) {
             finish = true;
             go_away(p);
         }
         print(suffix(p.index) + "passenger returns for another ride");
-        while (seats.size() == capacity)
+        while (seats.size() == capacity) {
+            auto a = high_resolution_clock::now();
             pthread_cond_wait(&playing_cond, &queuing);
+            wait_time += time(a);
+        }
         if (finish) go_away(p);
         seats.push_back(p);
         if (seats.size() == capacity)
@@ -99,7 +104,7 @@ private:
 
     void release(){
         pthread_mutex_lock(&queuing);
-        cout << "car arrives at "; time(); print(passengers_name() + "passengers get off");
+        cout << "car arrives at " << time(s).count() << " millisec "; print(passengers_name() + "passengers get off");
         seats.clear();
         pthread_cond_broadcast(&playing_cond);
         pthread_mutex_unlock(&queuing);
@@ -128,7 +133,7 @@ void* roller_coaster(void* c)
 
 void initialize()
 {
-    srand(time(0));
+    srand(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
     pthread_mutex_init(&output, NULL);
     pthread_mutex_init(&queuing, NULL);
     pthread_cond_init(&playing_cond, NULL);
@@ -158,9 +163,10 @@ int main(int argc, char **argv)
         pthread_create(&passenger_threads[i], NULL, passenger, (void*) passengers[i]);
     }
 
-    for (int i = 0; i < num_passengers; ++i)
-        pthread_join(passenger_threads[i], NULL);
+    for (int i = 0; i < num_passengers; ++i) pthread_join(passenger_threads[i], NULL);
     pthread_join(coaster_thread, NULL);
+
+    cout << "Total waiting time of all passengers: " << wait_time.count() << " millisec\n";
 
     return 0;
 }
