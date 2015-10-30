@@ -42,11 +42,13 @@ public:
     int index;
     RollerCoaster& coaster_car;
     Passenger(int i, RollerCoaster& c) : index(i), coaster_car(c) {}
+
     void wander() {
         print(suffix(index) + "passenger wanders around park");
         int wander_time = rand() % 10;
         usleep(wander_time * 1000);
     }
+
     void oncar() {
         pthread_mutex_lock(&queuing);
         pthread_cond_wait(&playing_cond, &queuing);
@@ -58,13 +60,15 @@ class RollerCoaster {
 public:
     int capacity, time_interval, cycles, runs;
     vector<Passenger> seats;
-    RollerCoaster(int sz, int t, int cc) : capacity(sz), time_interval(t), cycles(cc) { runs = 0; }
+    RollerCoaster(int sz, int t, int cc)
+        :capacity(sz), time_interval(t), cycles(cc) { runs = 0; }
 
     void run() {
         pthread_mutex_lock(&queuing);
         while (seats.size() != capacity)
             pthread_cond_wait(&running_cond, &queuing);
-        cout << "car depatures at " << time(s).count() << " millisec "; print(passengers_name() + "passengers are in the car");
+        cout << "car depatures at " << time(s).count() << " millisec ";
+        print(passengers_name() + "passengers are in the car");
         runs++;
         pthread_mutex_unlock(&queuing);
         usleep(time_interval * 1000);
@@ -73,10 +77,7 @@ public:
 
     void enqueue(Passenger p) {
         pthread_mutex_lock(&queuing);
-        if (runs >= cycles) {
-            finish = true;
-            go_away(p);
-        }
+        if (runs >= cycles) { finish = true;  go_away(p); }
         print(suffix(p.index) + "passenger returns for another ride");
         while (seats.size() == capacity) {
             auto a = high_resolution_clock::now();
@@ -104,7 +105,8 @@ private:
 
     void release(){
         pthread_mutex_lock(&queuing);
-        cout << "car arrives at " << time(s).count() << " millisec "; print(passengers_name() + "passengers get off");
+        cout << "car arrives at " << time(s).count() << " millisec ";
+        print(passengers_name() + "passengers get off");
         seats.clear();
         pthread_cond_broadcast(&playing_cond);
         pthread_mutex_unlock(&queuing);
@@ -162,7 +164,6 @@ int main(int argc, char **argv)
         passengers[i] = new Passenger(i + 1, coaster_car);
         pthread_create(&passenger_threads[i], NULL, passenger, (void*) passengers[i]);
     }
-
     for (int i = 0; i < num_passengers; ++i) pthread_join(passenger_threads[i], NULL);
     pthread_join(coaster_thread, NULL);
 
