@@ -3,7 +3,7 @@ CFLAGS = -O3
 TARGET = roller xw sequential
 OUTPUT = *.o $(TARGET)
 
-all: clean mp
+all: clean seq
 
 run:
 	./roller 2 2 2 2
@@ -11,8 +11,8 @@ run:
 roller:
 	g++ src/roller-coaster.cpp -o roller -std=c++11 -lpthread
 
-seq: clean
-	g++ src/sequential.cpp -o sequential -std=c++11 -lpthread $(LOG) $(CFLAGS)
+seq:
+	g++ src/nbody-sequential.cpp -o sequential -std=c++11 -lX11 -lpthread $(LOG) $(CFLAGS)
 
 mp:
 	g++ src/nbody-openmp.cpp -o nbody_openmp -std=c++11 -fopenmp $(LOG) $(CFLAGS)
