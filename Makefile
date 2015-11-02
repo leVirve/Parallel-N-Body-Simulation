@@ -16,11 +16,16 @@ roller:
 	g++ src/roller-coaster.cpp -o roller -lpthread
 
 seq:
-	g++ src/nbody-sequential.cpp -o sequential -lX11 $(LOG) $(CFLAGS)
+	$(eval TARGET := sequential)
+	g++ src/nbody-sequential.cpp -o $(TARGET) -lX11 $(LOG) $(CFLAGS)
 
 mp:
 	$(eval TARGET := nbody_openmp)
 	g++ src/nbody-openmp.cpp -o $(TARGET) -lX11 -fopenmp $(LOG) $(CFLAGS)
+
+p:
+	$(eval TARGET := nbody_pthread)
+	g++ src/nbody-pthread.cpp -o $(TARGET) -lX11 -lpthread $(LOG) $(CFLAGS)
 
 xw:
 	g++ Xwindow_example.cpp -o xw  -lpthread -lX11

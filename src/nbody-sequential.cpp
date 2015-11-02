@@ -14,7 +14,6 @@ Window window;
 GC gc;
 int screen, blackcolor, whitecolor, mf;
 struct body { double x, y, vx, vy; };
-struct Vector { double x, y; };
 body *bodies, *new_bodies;
 
 const double G = 6.67384e-11;
@@ -23,9 +22,9 @@ double Gmm;
 void init_window(int);
 void draw_points();
 
-void diff_v(int index, Vector& v)
+void move_nth_body(int index)
 {
-    body &a = bodies[index];
+    body &a = bodies[index], &new_a = new_bodies[index];
     double f_sum_x = 0, f_sum_y = 0;
     for (int i = 0; i < num_body; ++i) {
         if (index == i) continue;
@@ -35,7 +34,10 @@ void diff_v(int index, Vector& v)
         f_sum_x +=  Gmm * dx / radius_cube_sqrt;
         f_sum_y +=  Gmm * dy / radius_cube_sqrt;
     }
-    v = { f_sum_x * t / mass , f_sum_y * t / mass };
+    new_a.vx = a.vx + f_sum_x * t / mass;
+    new_a.vy = a.vy + f_sum_y * t / mass;
+    new_a.x  = a.x + new_a.vx * t;
+    new_a.y  = a.y + new_a.vy * t;
 }
 
 void calc()
@@ -43,17 +45,8 @@ void calc()
     Gmm = G * mass * mass;
     for (int i = 0; i < iters; ++i) {
         if (gui) draw_points();
-        for (int j = 0; j < num_body; ++j) {
-            Vector dv;
-            diff_v(j, dv);
-            body &new_b = new_bodies[j], &b = bodies[j];
-            new_b.vx = b.vx + dv.x;
-            new_b.vy = b.vy + dv.y;
-            new_b.x  = b.x + new_b.vx * t;
-            new_b.y  = b.y + new_b.vy * t;
-        }
-        body* t = new_bodies;
-        new_bodies = bodies; bodies = t;
+        for (int j = 0; j < num_body; ++j) move_nth_body(j);
+        body* t = new_bodies; new_bodies = bodies; bodies = t;
     }
 }
 
