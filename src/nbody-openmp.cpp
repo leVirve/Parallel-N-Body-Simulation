@@ -1,3 +1,4 @@
+#include <omp.h>
 #include <cmath>
 #include <string>
 #include <fstream>
@@ -27,6 +28,7 @@ void diff_v(int index, Vector& v)
 {
     body &a = bodies[index];
     double f_sum_x = 0, f_sum_y = 0;
+    #pragma omp parallel for reduction(+:f_sum_x, f_sum_y)
     for (int i = 0; i < num_body; ++i) {
         if (index == i) continue;
         body &b = bodies[i];
@@ -43,6 +45,7 @@ void calc()
     Gmm = G * mass * mass;
     for (int i = 0; i < iters; ++i) {
         if (gui) draw_points();
+        #pragma omp for
         for (int j = 0; j < num_body; ++j) {
             Vector dv;
             diff_v(j, dv);
@@ -71,6 +74,7 @@ int main(int argc, char const **argv)
         mf = (double) window_len / len;
         init_window(window_len);
     }
+    omp_set_num_threads(num_thread);
 
     ifstream input;
     input.open(argv[5]);
