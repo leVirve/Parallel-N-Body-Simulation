@@ -6,18 +6,18 @@
 #include <X11/Xlib.h>
 using namespace std;
 
-int num_thread, iters, num_body;
+int num_thread, iters, num_body, mf;
 double mass, t, xmin, ymin;
+struct body { double x, y, vx, vy; };
+body *bodies, *new_bodies;
+const double G = 6.67384e-11;
+double Gmm;
+
 bool gui;
 Display* display;
 Window window;
 GC gc;
-int screen, blackcolor, whitecolor, mf;
-struct body { double x, y, vx, vy; };
-body *bodies, *new_bodies;
-
-const double G = 6.67384e-11;
-double Gmm;
+int screen, blackcolor, whitecolor;
 
 void init_window(int);
 void draw_points();
@@ -72,7 +72,6 @@ int main(int argc, char const **argv)
     bodies = new body[num_body];
     new_bodies = new body[num_body];
 
-    double x, y, vx, vy;
     for (int i = 0; i < num_body; ++i) {
         body& t = bodies[i];
         input >> t.x >> t.y >> t.vx >> t.vy;
@@ -106,6 +105,7 @@ void init_window(int window_len)
 
 void draw_points()
 {
+    XClearWindow(display, window);
     for (int i = 0; i < num_body; ++i) {
         body& t = bodies[i];
         XDrawPoint(display, window, gc, (t.x - xmin) * mf, (t.y - ymin) * mf);

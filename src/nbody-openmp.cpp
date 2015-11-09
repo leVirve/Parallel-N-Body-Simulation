@@ -13,7 +13,7 @@ bool gui;
 Display* display;
 Window window;
 GC gc;
-int screen, blackcolor, whitecolor, mf;
+int screen, blackcolor, whitecolor, mf, window_len;
 struct body { double x, y, vx, vy; };
 body *bodies, *new_bodies;
 
@@ -47,7 +47,7 @@ void calc()
     Gmm = G * mass * mass;
     for (int i = 0; i < iters; ++i) {
         if (gui) draw_points();
-        #pragma omp for
+        #pragma omp for schedule(dynamic, 50)
         for (int j = 0; j < num_body; ++j) move_nth_body(j);
         body* t = new_bodies; new_bodies = bodies; bodies = t;
     }
@@ -60,7 +60,7 @@ int main(int argc, char const **argv)
     num_thread = stoi(argv[1]), iters = stoi(argv[3]);
     mass = stod(argv[2]), t = stod(argv[4]);
     gui = argv[7] == string("enable");
-    int window_len; double len;
+    double len;
     if (gui) {
         xmin = stod(argv[8]), ymin = stod(argv[9]);
         len = stod(argv[10]), window_len = stoi(argv[11]);
@@ -104,12 +104,12 @@ void init_window(int window_len)
                                  blackcolor, blackcolor);
     XMapWindow(display, window);
     gc = XCreateGC(display, window, 0, 0);
-
     XSetForeground(display, gc, whitecolor);
 }
 
 void draw_points()
 {
+    XClearWindow(display, window);
     for (int i = 0; i < num_body; ++i) {
         body& t = bodies[i];
         XDrawPoint(display, window, gc, (t.x - xmin) * mf, (t.y - ymin) * mf);
