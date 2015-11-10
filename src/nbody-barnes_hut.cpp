@@ -47,10 +47,8 @@ double Gm;
 
 void init_window(int);
 void draw_points();
+void draw_lines(double, double, double, double);
 Vector f_with(Body& a, Body& b, double M);
-
-inline double fx(double x) { return (x - xmin) * mf; }
-inline double fy(double y) { return (y - ymin) * mf; }
 
 class QuadTree {
 private:
@@ -85,11 +83,10 @@ public:
 
     void create_quradrant() {
         if (gui) {
-            XDrawLine(display, window, gc, fx(left_upper.x), fy(mid.y), fx(right_lower.x), fy(mid.y));
-            XDrawLine(display, window, gc, fx(mid.x), fy(left_upper.y), fx(mid.x), fy(right_lower.y));
+            draw_lines(left_upper.x, mid.y, right_lower.x, mid.y);
+            draw_lines(mid.x, left_upper.y, mid.x, right_lower.y);
         }
         quadrants.resize(QUAD);
-
         quadrants[NE].set_region({mid.x, left_upper.y}, {right_lower.x, mid.y});
         quadrants[NW].set_region(left_upper, mid);
         quadrants[SW].set_region({left_upper.x, mid.y}, {mid.x, right_lower.y});
@@ -139,9 +136,9 @@ Vector f_with(Body& a, Body& b, double M) {
     double GMm = Gm * M, f_x, f_y;
     double dx = b.x - a.x, dy = b.y - a.y,
            radius_square = pow(dx, 2) + pow(dy, 2),
-           radius_cube_sqrt = pow(radius_square, 1.5);
-    f_x = GMm * dx /radius_cube_sqrt;
-    f_y = GMm * dy /radius_cube_sqrt;
+           radius_cube_sqrt = pow(radius_square, 1.5) + 10e-7;
+    f_x = GMm * dx / radius_cube_sqrt;
+    f_y = GMm * dy / radius_cube_sqrt;
     return { f_x, f_y };
 }
 
@@ -156,10 +153,10 @@ void build_tree(QuadTree& tree)
     if (gui) {
         XClearWindow(display, window);
         XSetForeground(display, gc, 0x3C084B);
-        XDrawLine(display, window, gc, fx(_min), fy(_max), fx(_max), fy(_max));
-        XDrawLine(display, window, gc, fx(_min), fy(_min), fx(_max), fy(_min));
-        XDrawLine(display, window, gc, fx(_min), fy(_min), fx(_min), fy(_max));
-        XDrawLine(display, window, gc, fx(_max), fy(_min), fx(_max), fy(_max));
+        draw_lines(_min, _max, _max, _max);
+        draw_lines(_min, _min, _max, _min);
+        draw_lines(_min, _min, _min, _max);
+        draw_lines(_max, _min, _max, _max);
     }
     tree.set_region({_min, _max}, {_max, _min});
     for (int i = 0; i < num_body; ++i) tree.insert(bodies[i], 0);
@@ -226,6 +223,11 @@ void init_window(int window_len)
     XMapWindow(display, window);
     gc = XCreateGC(display, window, 0, 0);
     XSetLineAttributes(display, gc, 1, LineSolid, CapRound, JoinRound);
+}
+
+void draw_lines(double a, double b, double c, double d)
+{
+    XDrawLine(display, window, gc, (a-xmin)*mf, (b-ymin)*mf, (c-xmin)*mf, (d-ymin)*mf);
 }
 
 void draw_points()
