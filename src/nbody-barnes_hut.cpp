@@ -1,11 +1,7 @@
-#include <cmath>
 #include <vector>
 #include <cstddef>
-#include <fstream>
 #include <cassert>
-#include <iostream>
-#include <unistd.h>
-#include <X11/Xlib.h>
+#include "utils.h"
 using namespace std;
 
 #ifdef _DEBUG
@@ -19,34 +15,14 @@ using namespace std;
 #define INFO(str) do { } while ( false )
 #endif
 
-int num_thread, iters, num_body, mf;
-double mass, t, angle, xmin, ymin, window_len;
 bool gui;
-Display* display;
-Window window;
-GC gc;
-int screen, blackcolor, whitecolor;
-
-struct Vector { double x, y;
-    friend std::ostream& operator << (std::ostream& out, const Vector& b) {
-        out << "(" << b.x << ", " << b.y << ")";
-        return out;
-    }
-};
-struct Body { double x, y, vx, vy;
-    friend std::ostream& operator << (std::ostream& out, const Body& b) {
-        out << "(" << b.x << ", " << b.y << ")" << "Vx= " << b.vx << ", Vy= " << b.vy;
-        return out;
-    }
-};
+double mass, t, angle;
 Body *bodies, *new_bodies;
+int num_thread, iters, num_body;
 
-const double G = 6.67384e-11;
 const int QUAD = 4;
 double Gm;
 
-void init_window(int);
-void draw_points();
 void draw_lines(double, double, double, double);
 Vector f_with(Body& a, Body& b, double M);
 
@@ -151,8 +127,7 @@ void build_tree(QuadTree& tree)
         _max = max(_max, max(t.x, t.y));
     }
     if (gui) {
-        XClearWindow(display, window);
-        XSetForeground(display, gc, 0x3C084B);
+        clear_display();
         draw_lines(_min, _max, _max, _max);
         draw_lines(_min, _min, _max, _min);
         draw_lines(_min, _min, _min, _max);
@@ -160,7 +135,7 @@ void build_tree(QuadTree& tree)
     }
     tree.set_region({_min, _max}, {_max, _min});
     for (int i = 0; i < num_body; ++i) tree.insert(bodies[i], 0);
-    if (gui) draw_points();
+    if (gui) draw_colored_points();
 }
 
 void move_nth_body(int index, Vector f)
@@ -185,57 +160,8 @@ void calc(QuadTree& root)
 
 int main(int argc, char const **argv)
 {
-    num_thread = stoi(argv[1]), iters = stoi(argv[3]);
-    mass = stod(argv[2]), t = stod(argv[4]), angle = stod(argv[6]);
-    gui = argv[7] == string("enable");
-    double len;
-    if (gui) {
-        xmin = stod(argv[8]), ymin = stod(argv[9]);
-        len = stod(argv[10]), window_len = stoi(argv[11]);
-        mf = (double) window_len / len;
-        init_window(window_len);
-    }
+    init_env(argc, argv);
     QuadTree root = QuadTree();
-    ifstream input;
-    input.open(argv[5]);
-    input >> num_body;
-    bodies = new Body[num_body], new_bodies = new Body[num_body];
-    for (int i = 0; i < num_body; ++i) {
-        Body& t = bodies[i];
-        input >> t.x >> t.y >> t.vx >> t.vy;
-    }
-    input.close();
     calc(root);
     return 0;
-}
-
-void init_window(int window_len)
-{
-    int border_width = 0;
-    display = XOpenDisplay(NULL);
-    if (display == NULL) { fprintf(stderr, "Cannot open display\n"); exit(1); }
-    screen = DefaultScreen(display);
-    blackcolor = BlackPixel(display, screen);
-    whitecolor = WhitePixel(display, screen);
-    window = XCreateSimpleWindow(display, RootWindow(display, screen),
-                                 0, 0, window_len, window_len, border_width,
-                                 blackcolor, blackcolor);
-    XMapWindow(display, window);
-    gc = XCreateGC(display, window, 0, 0);
-    XSetLineAttributes(display, gc, 1, LineSolid, CapRound, JoinRound);
-}
-
-void draw_lines(double a, double b, double c, double d)
-{
-    XDrawLine(display, window, gc, (a-xmin)*mf, (b-ymin)*mf, (c-xmin)*mf, (d-ymin)*mf);
-}
-
-void draw_points()
-{
-    XSetForeground(display, gc, whitecolor);
-    for (int i = 0; i < num_body; ++i) {
-        Body& t = bodies[i];
-        XDrawPoint(display, window, gc, (t.x - xmin) * mf, (t.y - ymin) * mf);
-    }
-    XFlush(display);
 }

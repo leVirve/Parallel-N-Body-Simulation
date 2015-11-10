@@ -11,8 +11,8 @@ test:
 
 run:
 	# ./$(TARGET) 1 10000 1000000 0.01 test1.txt 0 enable -1 -1 3 600
-	# ./$(TARGET) 1 1 20000 1 test2.txt 0 enable -0.3 -0.3 0.6 600
-	./$(TARGET) 10 1 200 1 test3.txt 0.2 enable -0.5 -0.5 1 500
+	./$(TARGET) 1 1 20000 1 test2.txt 0 enable -0.3 -0.3 0.6 600
+	# ./$(TARGET) 10 1 200 1 test3.txt 0.2 enable -0.5 -0.5 1 500
 	# ./$(TARGET) 10 1 300 1 test4.txt 0.5 enable -1 -1  2.5 500
 
 
@@ -33,7 +33,7 @@ p:
 
 bh:
 	$(eval TARGET := nbody_barnes_hut)
-	g++ src/nbody-barnes_hut.cpp -o $(TARGET) -lX11 -lpthread $(LOG) $(CFLAGS)
+	g++ src/nbody-barnes_hut.cpp src/utils.cpp -o $(TARGET) -lX11 -lpthread $(LOG) $(CFLAGS)
 
 xw:
 	g++ Xwindow_example.cpp -o xw  -lpthread -lX11

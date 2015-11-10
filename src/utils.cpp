@@ -30,11 +30,11 @@ void input_bodies(string filename)
     ifstream input;
     input.open(filename);
     input >> num_body;
-    bodies = new body[num_body];
-    new_bodies = new body[num_body];
+    bodies = new Body[num_body];
+    new_bodies = new Body[num_body];
 
     for (int i = 0; i < num_body; ++i) {
-        body& t = bodies[i];
+        Body& t = bodies[i];
         input >> t.x >> t.y >> t.vx >> t.vy;
     }
     input.close();
@@ -61,8 +61,25 @@ void draw_points()
 {
     XClearWindow(display, window);
     for (int i = 0; i < num_body; ++i) {
-        body& t = bodies[i];
+        Body& t = bodies[i];
         XDrawPoint(display, window, gc, (t.x - xmin) * mf, (t.y - ymin) * mf);
     }
     XFlush(display);
+}
+
+void draw_lines(double a, double b, double c, double d)
+{
+    XDrawLine(display, window, gc, (a-xmin)*mf, (b-ymin)*mf, (c-xmin)*mf, (d-ymin)*mf);
+}
+
+void clear_display()
+{
+    XClearWindow(display, window);
+    XSetForeground(display, gc, 0x3C084B);
+}
+
+void draw_colored_points()
+{
+    XSetForeground(display, gc, whitecolor);
+    draw_points();
 }

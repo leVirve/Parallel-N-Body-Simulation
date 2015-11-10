@@ -3,17 +3,17 @@
 
 bool gui;
 double mass, t, Gmm;
-body *bodies, *new_bodies;
+Body *bodies, *new_bodies;
 int num_thread, iters, num_body;
 
 void move_nth_body(int index)
 {
-    body &a = bodies[index], &new_a = new_bodies[index];
+    Body &a = bodies[index], &new_a = new_bodies[index];
     double f_sum_x = 0, f_sum_y = 0;
     #pragma omp parallel for reduction(+:f_sum_x, f_sum_y)
     for (int i = 0; i < num_body; ++i) {
         if (index == i) continue;
-        body &b = bodies[i];
+        Body &b = bodies[i];
         double dx = b.x - a.x, dy = b.y - a.y,
                radius_cube_sqrt = pow(pow(dx, 2) + pow(dy, 2), 1.5) + 10e-7;
         f_sum_x +=  Gmm * dx / radius_cube_sqrt;
@@ -35,7 +35,7 @@ int main(int argc, char const **argv)
         if (gui) draw_points();
         #pragma omp for schedule(dynamic, 50)
         for (int j = 0; j < num_body; ++j) move_nth_body(j);
-        body* t = new_bodies; new_bodies = bodies; bodies = t;
+        Body* t = new_bodies; new_bodies = bodies; bodies = t;
     }
     return 0;
 }
