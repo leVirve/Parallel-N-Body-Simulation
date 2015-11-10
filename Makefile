@@ -1,6 +1,6 @@
 LOG = -D_DEBUG0
 CFLAGS = -O3 -std=c++11
-EXE = roller xw sequential nbody_openmp
+EXE = roller xw sequential nbody_openmp nbody_barnes_hut
 OUTPUT = *.o $(EXE)
 v = bh
 
@@ -21,7 +21,7 @@ roller:
 
 seq:
 	$(eval TARGET := sequential)
-	g++ src/nbody-sequential.cpp -o $(TARGET) -lX11 $(LOG) $(CFLAGS)
+	g++ src/nbody-sequential.cpp src/utils.cpp -o $(TARGET) -lX11 $(LOG) $(CFLAGS)
 
 mp:
 	$(eval TARGET := nbody_openmp)
