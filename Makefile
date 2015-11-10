@@ -25,7 +25,7 @@ seq:
 
 mp:
 	$(eval TARGET := nbody_openmp)
-	g++ src/nbody-openmp.cpp -o $(TARGET) -lX11 -fopenmp $(LOG) $(CFLAGS)
+	g++ src/nbody-openmp.cpp src/utils.cpp -o $(TARGET) -lX11 -fopenmp $(LOG) $(CFLAGS)
 
 p:
 	$(eval TARGET := nbody_pthread)
