@@ -1,3 +1,4 @@
+#include <omp.h>
 #include "utils.h"
 
 bool gui;
@@ -27,6 +28,7 @@ void move_nth_body(int index)
 int main(int argc, char const **argv)
 {
     init_env(argc, argv);
+    omp_set_num_threads(num_thread);
 
     Gmm = G * mass * mass;
     for (int i = 0; i < iters; ++i) {
