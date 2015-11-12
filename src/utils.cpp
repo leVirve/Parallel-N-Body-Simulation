@@ -53,13 +53,12 @@ void init_window(int window_len)
                                  blackcolor, blackcolor);
     XMapWindow(display, window);
     gc = XCreateGC(display, window, 0, 0);
-
-    XSetForeground(display, gc, whitecolor);
 }
 
-void draw_points()
+void draw_points(int mode)
 {
-    XClearWindow(display, window);
+    if (mode == 0) XClearWindow(display, window);
+    XSetForeground(display, gc, whitecolor);
     for (int i = 0; i < num_body; ++i) {
         Body& t = bodies[i];
         XDrawPoint(display, window, gc, (t.x - xmin) * mf, (t.y - ymin) * mf);
@@ -78,8 +77,3 @@ void clear_display()
     XSetForeground(display, gc, 0x3C084B);
 }
 
-void draw_colored_points()
-{
-    XSetForeground(display, gc, whitecolor);
-    draw_points();
-}

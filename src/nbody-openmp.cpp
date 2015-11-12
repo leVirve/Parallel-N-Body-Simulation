@@ -32,7 +32,7 @@ int main(int argc, char const **argv)
 
     Gmm = G * mass * mass;
     for (int i = 0; i < iters; ++i) {
-        if (gui) draw_points();
+        if (gui) draw_points(0);
         #pragma omp for schedule(dynamic, 50)
         for (int j = 0; j < num_body; ++j) move_nth_body(j);
         Body* t = new_bodies; new_bodies = bodies; bodies = t;
