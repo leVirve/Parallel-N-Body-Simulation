@@ -4,17 +4,6 @@
 #include "utils.h"
 using namespace std;
 
-#ifdef _DEBUG
-#define DEBUG(str) do { std::cout << str << std::endl; } while( false )
-#else
-#define DEBUG(str) do { } while ( false )
-#endif
-#ifndef INFO
-#define INFO(str) do { std::cout << str << std::endl; } while( false )
-#else
-#define INFO(str) do { } while ( false )
-#endif
-
 bool gui;
 double mass, t, angle;
 Body *bodies, *new_bodies;
@@ -89,15 +78,15 @@ public:
     }
 
     Vector comute_force(Body& body) {
-        Vector f = {0, 0};
         if (node_type == External) {
-            if (content == &body) return f;
+            if (content == &body) return {0, 0};
             return f_with(body, *content, mass);
-        } else if (region_width /
+        } else if (theta && region_width /
                     pow(pow(mass_center.x - body.x, 2) +
                         pow(mass_center.y - body.y, 2), 0.5) < theta) {
             return f_with(body, mass_center, sum_mass);
         } else {
+            Vector f = {0, 0};
             for (int i = 0; i < QUAD; ++i) {
                 if (quadrants[i].num_body < 1) continue;
                 Vector t = quadrants[i].comute_force(body);
@@ -108,11 +97,10 @@ public:
     }
 };
 
-Vector f_with(Body& a, Body& b, double M) {
+inline Vector f_with(Body& a, Body& b, double M) {
     double GMm = Gm * M, f_x, f_y;
     double dx = b.x - a.x, dy = b.y - a.y,
-           radius_square = pow(dx, 2) + pow(dy, 2),
-           radius_cube_sqrt = pow(radius_square, 1.5) + 10e-7;
+           radius_cube_sqrt = pow(pow(dx, 2) + pow(dy, 2), 1.5) + 10e-7;
     f_x = GMm * dx / radius_cube_sqrt;
     f_y = GMm * dy / radius_cube_sqrt;
     return { f_x, f_y };
@@ -135,33 +123,31 @@ void build_tree(QuadTree& tree)
     }
     tree.set_region({_min, _max}, {_max, _min});
     for (int i = 0; i < num_body; ++i) tree.insert(bodies[i], 0);
-    if (gui) draw_colored_points();
+    if (gui) draw_points(1);
 }
 
-void move_nth_body(int index, Vector f)
+void move_nth_body(QuadTree& root)
 {
-    Body &a = bodies[index], &new_a = new_bodies[index];
-    new_a.vx = a.vx + f.x * t / mass;
-    new_a.vy = a.vy + f.y * t / mass;
-    new_a.x  = a.x + new_a.vx * t;
-    new_a.y  = a.y + new_a.vy * t;
-}
-
-void calc(QuadTree& root)
-{
-    Gm = G * mass;
-    for (int i = 0; i < iters; ++i) {
-        build_tree(root);
-        for (int j = 0; j < num_body; ++j)
-            move_nth_body(j, root.comute_force(bodies[j]));
-        Body* t = new_bodies; new_bodies = bodies; bodies = t;
+    for (int i = 0; i < num_body; ++i) {
+        Vector f = root.comute_force(bodies[i]);
+        Body &a = bodies[i], &new_a = new_bodies[i];
+        new_a.vx = a.vx + f.x * t / mass;
+        new_a.vy = a.vy + f.y * t / mass;
+        new_a.x  = a.x + new_a.vx * t;
+        new_a.y  = a.y + new_a.vy * t;
     }
 }
 
 int main(int argc, char const **argv)
 {
     init_env(argc, argv);
+
     QuadTree root = QuadTree();
-    calc(root);
+    Gm = G * mass;
+    for (int i = 0; i < iters; ++i) {
+        build_tree(root);
+        move_nth_body(root);
+        Body* t = new_bodies; new_bodies = bodies; bodies = t;
+    }
     return 0;
 }
