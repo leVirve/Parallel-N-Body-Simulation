@@ -76,4 +76,3 @@ void clear_display()
     XClearWindow(display, window);
     XSetForeground(display, gc, 0x3C084B);
 }
-

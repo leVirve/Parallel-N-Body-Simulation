@@ -1,18 +1,17 @@
 #include <pthread.h>
 #include "utils.h"
 
-bool gui;
+bool gui, finsish = false;
 double mass, t, Gmm;
 Body *bodies, *new_bodies;
 int num_thread, iters, num_body;
 
-int queuing_jobs = 0;
+int queuing_jobs = 0, num_done = 0;
 pthread_mutex_t queuing;
-pthread_cond_t processing;
+pthread_cond_t processing, iter_fin;
 
-void* move_nth_body(void* i)
+void move_nth_body(int index)
 {
-    int index = *(int*) i;
     Body &a = bodies[index], &new_a = new_bodies[index];
     double f_sum_x = 0, f_sum_y = 0;
     for (int i = 0; i < num_body; ++i) {
@@ -27,36 +26,51 @@ void* move_nth_body(void* i)
     new_a.vy = a.vy + f_sum_y * t / mass;
     new_a.x  = a.x + new_a.vx * t;
     new_a.y  = a.y + new_a.vy * t;
-    delete (int*) i;
-    pthread_mutex_lock(&queuing);
-    queuing_jobs--;
-    pthread_mutex_unlock(&queuing);
-    pthread_cond_signal(&processing);
+}
+
+void* worker(void* param)
+{
+    while (true) {
+        pthread_mutex_lock(&queuing);
+        while (!finsish && queuing_jobs <= 0)
+            pthread_cond_wait(&processing, &queuing);
+        int i = --queuing_jobs;
+        pthread_mutex_unlock(&queuing);
+        if (finsish) break;
+        move_nth_body(i);
+        pthread_mutex_lock(&queuing);
+        num_done++;
+        if (num_done >= num_body) pthread_cond_signal(&iter_fin);
+        pthread_mutex_unlock(&queuing);
+    }
 }
 
 int main(int argc, char const **argv)
 {
     init_env(argc, argv);
 
-    pthread_t workers[num_body];
+    pthread_t workers[num_thread];
     pthread_mutex_init(&queuing, NULL);
+    pthread_cond_init(&iter_fin, NULL);
     pthread_cond_init(&processing, NULL);
+
+    for (int i = 0; i < num_thread; ++i)
+        pthread_create(&workers[i], NULL, worker, NULL);
 
     Gmm = G * mass * mass;
     for (int i = 0; i < iters; ++i) {
         if (gui) draw_points(0);
-        for (int j = 0; j < num_body; ++j) {
-            pthread_mutex_lock(&queuing);
-            while (queuing_jobs >= num_thread)
-                pthread_cond_wait(&processing, &queuing);
-            queuing_jobs++;
-            pthread_mutex_unlock(&queuing);
-            int *index = new int; *index = j;
-            pthread_create(&workers[j], NULL, move_nth_body, (void*) index);
-        }
-        for (int j = 0; j < num_body; ++j)
-            pthread_join(workers[j], NULL);
+        pthread_mutex_lock(&queuing);
+        queuing_jobs = num_body, num_done = 0;
+        pthread_cond_broadcast(&processing);
+        pthread_cond_wait(&iter_fin, &queuing);
+        pthread_mutex_unlock(&queuing);
         Body* t = new_bodies; new_bodies = bodies; bodies = t;
     }
+    finsish = true;
+    pthread_mutex_lock(&queuing);
+    pthread_cond_broadcast(&processing);
+    pthread_mutex_unlock(&queuing);
+    for (int j = 0; j < num_thread; ++j) pthread_join(workers[j], NULL);
     return 0;
 }

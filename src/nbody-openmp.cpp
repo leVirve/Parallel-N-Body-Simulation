@@ -10,7 +10,7 @@ void move_nth_body(int index)
 {
     Body &a = bodies[index], &new_a = new_bodies[index];
     double f_sum_x = 0, f_sum_y = 0;
-    #pragma omp parallel for reduction(+:f_sum_x, f_sum_y)
+    // #pragma omp parallel for reduction(+:f_sum_x, f_sum_y)
     for (int i = 0; i < num_body; ++i) {
         if (index == i) continue;
         Body &b = bodies[i];
@@ -30,10 +30,11 @@ int main(int argc, char const **argv)
     init_env(argc, argv);
     omp_set_num_threads(num_thread);
 
+    int tasks_per_thread = num_body / num_thread / 10;
     Gmm = G * mass * mass;
     for (int i = 0; i < iters; ++i) {
         if (gui) draw_points(0);
-        #pragma omp for schedule(dynamic, 50)
+        #pragma omp parallel for schedule(dynamic, tasks_per_thread)
         for (int j = 0; j < num_body; ++j) move_nth_body(j);
         Body* t = new_bodies; new_bodies = bodies; bodies = t;
     }
