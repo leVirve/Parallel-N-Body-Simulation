@@ -1,10 +1,11 @@
 #include <vector>
 #include <cstddef>
 #include <cassert>
+#include <pthread.h>
 #include "utils.h"
 using namespace std;
 
-bool gui;
+bool gui, finsish = false;
 double mass, t, angle;
 Body *bodies, *new_bodies;
 int num_thread, iters, num_body;
@@ -12,7 +13,10 @@ int num_thread, iters, num_body;
 const int QUAD = 4;
 double Gm;
 
-void draw_lines(double, double, double, double);
+int queuing_jobs = 0, num_done = 0;
+pthread_mutex_t queuing;
+pthread_cond_t processing, iter_fin;
+
 Vector f_with(Body& a, Body& b, double M);
 
 class QuadTree {
@@ -97,6 +101,8 @@ public:
     }
 };
 
+QuadTree root = QuadTree();
+
 inline Vector f_with(Body& a, Body& b, double M) {
     double GMm = Gm * M, f_x, f_y;
     double dx = b.x - a.x, dy = b.y - a.y,
@@ -126,15 +132,30 @@ void build_tree(QuadTree& tree)
     if (gui) draw_points(1);
 }
 
-void move_nth_body(QuadTree& root)
+inline void move_nth_body(int i)
 {
-    for (int i = 0; i < num_body; ++i) {
-        Vector f = root.comute_force(bodies[i]);
-        Body &a = bodies[i], &new_a = new_bodies[i];
-        new_a.vx = a.vx + f.x * t / mass;
-        new_a.vy = a.vy + f.y * t / mass;
-        new_a.x  = a.x + new_a.vx * t;
-        new_a.y  = a.y + new_a.vy * t;
+    Vector f = root.comute_force(bodies[i]);
+    Body &a = bodies[i], &new_a = new_bodies[i];
+    new_a.vx = a.vx + f.x * t / mass;
+    new_a.vy = a.vy + f.y * t / mass;
+    new_a.x  = a.x + new_a.vx * t;
+    new_a.y  = a.y + new_a.vy * t;
+}
+
+void* worker(void* param)
+{
+    while (true) {
+        pthread_mutex_lock(&queuing);
+        while (!finsish && queuing_jobs <= 0)
+            pthread_cond_wait(&processing, &queuing);
+        int i = --queuing_jobs;
+        pthread_mutex_unlock(&queuing);
+        if (finsish) break;
+        move_nth_body(i);
+        pthread_mutex_lock(&queuing);
+        num_done++;
+        if (num_done >= num_body) pthread_cond_signal(&iter_fin);
+        pthread_mutex_unlock(&queuing);
     }
 }
 
@@ -142,12 +163,28 @@ int main(int argc, char const **argv)
 {
     init_env(argc, argv);
 
-    QuadTree root = QuadTree();
+    pthread_t workers[num_thread];
+    pthread_mutex_init(&queuing, NULL);
+    pthread_cond_init(&iter_fin, NULL);
+    pthread_cond_init(&processing, NULL);
+
+    for (int i = 0; i < num_thread; ++i)
+        pthread_create(&workers[i], NULL, worker, NULL);
+
     Gm = G * mass;
     for (int i = 0; i < iters; ++i) {
         build_tree(root);
-        move_nth_body(root);
+        pthread_mutex_lock(&queuing);
+        queuing_jobs = num_body, num_done = 0;
+        pthread_cond_broadcast(&processing);
+        pthread_cond_wait(&iter_fin, &queuing);
+        pthread_mutex_unlock(&queuing);
         Body* t = new_bodies; new_bodies = bodies; bodies = t;
     }
+    finsish = true;
+    pthread_mutex_lock(&queuing);
+    pthread_cond_broadcast(&processing);
+    pthread_mutex_unlock(&queuing);
+    for (int j = 0; j < num_thread; ++j) pthread_join(workers[j], NULL);
     return 0;
 }

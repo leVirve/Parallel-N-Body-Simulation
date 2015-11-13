@@ -10,7 +10,7 @@ int queuing_jobs = 0, num_done = 0;
 pthread_mutex_t queuing;
 pthread_cond_t processing, iter_fin;
 
-void move_nth_body(int index)
+inline void move_nth_body(int index)
 {
     Body &a = bodies[index], &new_a = new_bodies[index];
     double f_sum_x = 0, f_sum_y = 0;
