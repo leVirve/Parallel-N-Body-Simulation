@@ -62,18 +62,15 @@ public:
         quadrants[SE].set_region(mid, right_lower);
     }
 
-    void insert(Body& node, int level) {
+    void insert(Body& node) {
         if (node_type == Internal) {
-            quadrants[get_quadrant(node)].insert(node, level+1);
+            quadrants[get_quadrant(node)].insert(node);
         } else if (node_type == External && num_body == 1) {
             create_quradrant();
             node_type = Internal;
-            quadrants[get_quadrant(*content)].insert(*content, level+1);
-            quadrants[get_quadrant(node)].insert(node, level+1);
-        } else {
-            DEBUG("Insert " << node << " @lv." << level);
-            content = &node;
-        }
+            quadrants[get_quadrant(*content)].insert(*content);
+            quadrants[get_quadrant(node)].insert(node);
+        } else content = &node;
         double mx = sum_mass * mass_center.x + mass * node.x,
                my = sum_mass * mass_center.y + mass * node.y;
         sum_mass += mass;
@@ -81,7 +78,7 @@ public:
         num_body++;
     }
 
-    Vector comute_force(Body& body) {
+    Vector compute_force(Body& body) {
         if (node_type == External) {
             if (content == &body) return {0, 0};
             return f_with(body, *content, mass);
@@ -93,7 +90,7 @@ public:
             Vector f = {0, 0};
             for (int i = 0; i < QUAD; ++i) {
                 if (quadrants[i].num_body < 1) continue;
-                Vector t = quadrants[i].comute_force(body);
+                Vector t = quadrants[i].compute_force(body);
                 f.x += t.x; f.y += t.y;
             }
             return f;
@@ -128,13 +125,13 @@ void build_tree(QuadTree& tree)
         draw_lines(_max, _min, _max, _max);
     }
     tree.set_region({_min, _max}, {_max, _min});
-    for (int i = 0; i < num_body; ++i) tree.insert(bodies[i], 0);
+    for (int i = 0; i < num_body; ++i) tree.insert(bodies[i]);
     if (gui) draw_points(1);
 }
 
 inline void move_nth_body(int i)
 {
-    Vector f = root.comute_force(bodies[i]);
+    Vector f = root.compute_force(bodies[i]);
     Body &a = bodies[i], &new_a = new_bodies[i];
     new_a.vx = a.vx + f.x * t / mass;
     new_a.vy = a.vy + f.y * t / mass;
