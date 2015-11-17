@@ -2,13 +2,15 @@
 #define __UTILS_H__
 
 #include <cmath>
+#include <chrono>
 #include <string>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <unistd.h>
 #include <X11/Xlib.h>
-#include <sys/time.h>
+using namespace std;
+using namespace std::chrono;
 
 #ifdef _DEBUG
 #define DEBUG(str) do { std::cout << str << std::endl; } while( false )
@@ -20,13 +22,6 @@
 #else
 #define INFO(str) do { } while ( false )
 #endif
-
-#define MICRO_SEC 1000000
-#define time_diff(x) x.tv_sec - start.tv_sec + (double)(x.tv_usec - start.tv_usec) / MICRO_SEC
-#define dump_status()  struct timeval timestamp; \
-                    gettimeofday(&timestamp, NULL); \
-                    printf("@(time: %.12f)\n", time_diff(timestamp)); \
-                    fflush(stdout);
 
 struct Vector { double x, y;
     friend std::ostream& operator << (std::ostream& out, const Vector& b) {
@@ -47,6 +42,11 @@ extern double mass, t;
 extern int screen, blackcolor, whitecolor;
 extern bool gui;
 extern Body *bodies, *new_bodies;
+
+#ifdef _IO_TIME
+extern nanoseconds io_time;
+#endif
+nanoseconds timeit(high_resolution_clock::time_point);
 
 void init_env(int, const char**);
 void input_bodies(std::string);

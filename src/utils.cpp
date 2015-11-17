@@ -7,6 +7,11 @@ GC gc;
 int screen, blackcolor, whitecolor, window_len, mf;
 double xmin, ymin;
 
+nanoseconds timeit(high_resolution_clock::time_point s)
+{
+    return duration_cast<nanoseconds>(high_resolution_clock::now() - s);
+}
+
 void init_env(int count, const char**argv)
 {
     if (count < 7) {
@@ -27,6 +32,9 @@ void init_env(int count, const char**argv)
 
 void input_bodies(string filename)
 {
+#ifdef _IO_TIME
+    high_resolution_clock::time_point t = high_resolution_clock::now();
+#endif
     ifstream input;
     input.open(filename);
     input >> num_body;
@@ -38,6 +46,9 @@ void input_bodies(string filename)
         input >> t.x >> t.y >> t.vx >> t.vy;
     }
     input.close();
+#ifdef _IO_TIME
+    io_time += timeit(t);
+#endif
 }
 
 void init_window(int window_len)

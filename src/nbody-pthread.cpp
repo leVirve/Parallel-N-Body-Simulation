@@ -9,6 +9,7 @@ int num_thread, iters, num_body;
 int queuing_jobs = 0, num_done = 0;
 pthread_mutex_t queuing;
 pthread_cond_t processing, iter_fin;
+nanoseconds total_time;
 
 inline void move_nth_body(int index)
 {
@@ -48,6 +49,7 @@ void* worker(void* param)
 int main(int argc, char const **argv)
 {
     init_env(argc, argv);
+    high_resolution_clock::time_point s;
 
     pthread_t workers[num_thread];
     pthread_mutex_init(&queuing, NULL);
@@ -60,17 +62,20 @@ int main(int argc, char const **argv)
     Gmm = G * mass * mass;
     for (int i = 0; i < iters; ++i) {
         if (gui) draw_points(0);
+        s = high_resolution_clock::now();
         pthread_mutex_lock(&queuing);
         queuing_jobs = num_body, num_done = 0;
         pthread_cond_broadcast(&processing);
         pthread_cond_wait(&iter_fin, &queuing);
         pthread_mutex_unlock(&queuing);
         Body* t = new_bodies; new_bodies = bodies; bodies = t;
+        total_time += timeit(s);
     }
     finsish = true;
     pthread_mutex_lock(&queuing);
     pthread_cond_broadcast(&processing);
     pthread_mutex_unlock(&queuing);
     for (int j = 0; j < num_thread; ++j) pthread_join(workers[j], NULL);
+    INFO("Run in " << total_time.count() / 1000 << " ms");
     return 0;
 }

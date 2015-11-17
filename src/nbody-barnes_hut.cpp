@@ -16,6 +16,7 @@ double Gm;
 int queuing_jobs = 0, num_done = 0;
 pthread_mutex_t queuing;
 pthread_cond_t processing, iter_fin;
+nanoseconds total_time, build_time, io_time;
 
 Vector f_with(Body& a, Body& b, double M);
 
@@ -111,6 +112,7 @@ inline Vector f_with(Body& a, Body& b, double M) {
 
 void build_tree(QuadTree& tree)
 {
+    high_resolution_clock::time_point t = high_resolution_clock::now();
     double _min = 0, _max = 0;
     for (int i = 0; i < num_body; ++i) {
         Body& t = bodies[i];
@@ -126,6 +128,7 @@ void build_tree(QuadTree& tree)
     }
     tree.set_region({_min, _max}, {_max, _min});
     for (int i = 0; i < num_body; ++i) tree.insert(bodies[i]);
+    build_time += timeit(t);
     if (gui) draw_points(1);
 }
 
@@ -159,6 +162,7 @@ void* worker(void* param)
 int main(int argc, char const **argv)
 {
     init_env(argc, argv);
+    high_resolution_clock::time_point s;
 
     pthread_t workers[num_thread];
     pthread_mutex_init(&queuing, NULL);
@@ -171,17 +175,22 @@ int main(int argc, char const **argv)
     Gm = G * mass;
     for (int i = 0; i < iters; ++i) {
         build_tree(root);
+        s = high_resolution_clock::now();
         pthread_mutex_lock(&queuing);
         queuing_jobs = num_body, num_done = 0;
         pthread_cond_broadcast(&processing);
         pthread_cond_wait(&iter_fin, &queuing);
         pthread_mutex_unlock(&queuing);
         Body* t = new_bodies; new_bodies = bodies; bodies = t;
+        total_time += timeit(s);
     }
     finsish = true;
     pthread_mutex_lock(&queuing);
     pthread_cond_broadcast(&processing);
     pthread_mutex_unlock(&queuing);
     for (int j = 0; j < num_thread; ++j) pthread_join(workers[j], NULL);
+    INFO("- compute: " << total_time.count() / 1000 << " ms");
+    INFO("- build tree: " << build_time.count() / 1000 << " ms");
+    INFO("- i/o: " << io_time.count() / 1000 << " ms");
     return 0;
 }

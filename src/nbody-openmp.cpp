@@ -6,6 +6,8 @@ double mass, t, Gmm;
 Body *bodies, *new_bodies;
 int num_thread, iters, num_body;
 
+nanoseconds total_time;
+
 void move_nth_body(int index)
 {
     Body &a = bodies[index], &new_a = new_bodies[index];
@@ -29,14 +31,18 @@ int main(int argc, char const **argv)
 {
     init_env(argc, argv);
     omp_set_num_threads(num_thread);
+    high_resolution_clock::time_point s;
 
     int tasks_per_thread = num_body / num_thread / 10;
     Gmm = G * mass * mass;
     for (int i = 0; i < iters; ++i) {
         if (gui) draw_points(0);
+        s = high_resolution_clock::now();
         #pragma omp parallel for schedule(dynamic, tasks_per_thread)
         for (int j = 0; j < num_body; ++j) move_nth_body(j);
         Body* t = new_bodies; new_bodies = bodies; bodies = t;
+        total_time += timeit(s);
     }
+    INFO("Run in " << total_time.count() / 1000 << " ms");
     return 0;
 }
