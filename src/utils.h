@@ -41,7 +41,7 @@ struct Body { double x, y, vx, vy;
 const double G = 6.67384e-11;
 
 extern int num_thread, iters, num_body;
-extern double mass, t, angle;
+extern double mass, t, Gmm, angle;
 extern int screen, blackcolor, whitecolor;
 extern bool gui;
 extern Body *bodies, *new_bodies;
@@ -56,5 +56,23 @@ void input_bodies(std::string);
 void init_window(int);
 void draw_points(int);
 void draw_lines(double, double, double, double);
+
+inline void move_nth_body(int index)
+{
+    Body &a = bodies[index], &new_a = new_bodies[index];
+    double f_sum_x = 0, f_sum_y = 0;
+    for (int i = 0; i < num_body; ++i) {
+        if (index == i) continue;
+        Body &b = bodies[i];
+        double dx = b.x - a.x, dy = b.y - a.y,
+               radius_cube_sqrt = CUBE(sqrt(SQUARE(dx) + SQUARE(dy))) + 10e-7;
+        f_sum_x +=  Gmm * dx / radius_cube_sqrt;
+        f_sum_y +=  Gmm * dy / radius_cube_sqrt;
+    }
+    new_a.vx = a.vx + f_sum_x * t / mass;
+    new_a.vy = a.vy + f_sum_y * t / mass;
+    new_a.x  = a.x + new_a.vx * t;
+    new_a.y  = a.y + new_a.vy * t;
+}
 
 #endif

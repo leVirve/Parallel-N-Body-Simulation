@@ -11,24 +11,6 @@ pthread_mutex_t queuing;
 pthread_cond_t processing, iter_fin;
 nanoseconds total_time;
 
-inline void move_nth_body(int index)
-{
-    Body &a = bodies[index], &new_a = new_bodies[index];
-    double f_sum_x = 0, f_sum_y = 0;
-    for (int i = 0; i < num_body; ++i) {
-        if (index == i) continue;
-        Body &b = bodies[i];
-        double dx = b.x - a.x, dy = b.y - a.y,
-               radius_cube_sqrt = CUBE(sqrt(SQUARE(dx) + SQUARE(dy))) + 10e-7;
-        f_sum_x +=  Gmm * dx / radius_cube_sqrt;
-        f_sum_y +=  Gmm * dy / radius_cube_sqrt;
-    }
-    new_a.vx = a.vx + f_sum_x * t / mass;
-    new_a.vy = a.vy + f_sum_y * t / mass;
-    new_a.x  = a.x + new_a.vx * t;
-    new_a.y  = a.y + new_a.vy * t;
-}
-
 void* worker(void* param)
 {
     while (true) {
