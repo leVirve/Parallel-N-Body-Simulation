@@ -38,7 +38,7 @@ struct Body { double x, y, vx, vy;
 const double G = 6.67384e-11;
 
 extern int num_thread, iters, num_body;
-extern double mass, t;
+extern double mass, t, angle;
 extern int screen, blackcolor, whitecolor;
 extern bool gui;
 extern Body *bodies, *new_bodies;

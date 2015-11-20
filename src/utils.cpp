@@ -19,7 +19,7 @@ void init_env(int count, const char**argv)
     }
     double len;
     num_thread = stoi(argv[1]), iters = stoi(argv[3]);
-    mass = stod(argv[2]), t = stod(argv[4]);
+    mass = stod(argv[2]), t = stod(argv[4]), angle = stod(argv[6]);
     gui = argv[7] == string("enable");
     if (gui) {
         xmin = stod(argv[8]), ymin = stod(argv[9]);
