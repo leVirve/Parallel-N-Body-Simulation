@@ -5,6 +5,12 @@
 #include "utils.h"
 using namespace std;
 
+#define f_cal(a, b, M, f) \
+    double dx = b.x - a.x, dy = b.y - a.y, \
+           radius_cube_sqrt = CUBE(sqrt(SQUARE(dx) + SQUARE(dy))) + 10e-7, \
+           GMmC = Gm * M / radius_cube_sqrt; \
+    f.x += GMmC * dx, f.y += GMmC * dy; \
+
 bool gui, finsish = false;
 double mass, t, angle;
 Body *bodies, *new_bodies;
@@ -17,8 +23,6 @@ int queuing_jobs = 0, num_done = 0;
 pthread_mutex_t queuing;
 pthread_cond_t processing, iter_fin;
 nanoseconds total_time, build_time, io_time;
-
-Vector f_with(Body& a, Body& b, double M);
 
 class QuadTree {
 private:
@@ -79,36 +83,24 @@ public:
         num_body++;
     }
 
-    Vector compute_force(Body& body) {
+    void compute_force(Body& body, Vector& f) {
         if (node_type == External) {
-            if (content == &body) return {0, 0};
-            return f_with(body, *content, mass);
+            if (content == &body) return;
+            f_cal(body, (*content), mass, f);
         } else if (theta && region_width /
-                    pow(pow(mass_center.x - body.x, 2) +
-                        pow(mass_center.y - body.y, 2), 0.5) < theta) {
-            return f_with(body, mass_center, sum_mass);
+                    sqrt(SQUARE(mass_center.x - body.x)
+                        + SQUARE(mass_center.y - body.y)) < theta) {
+            f_cal(body, mass_center, sum_mass, f);
         } else {
-            Vector f = {0, 0};
             for (int i = 0; i < QUAD; ++i) {
                 if (quadrants[i].num_body < 1) continue;
-                Vector t = quadrants[i].compute_force(body);
-                f.x += t.x; f.y += t.y;
+                quadrants[i].compute_force(body, f);
             }
-            return f;
         }
     }
 };
 
 QuadTree root = QuadTree();
-
-inline Vector f_with(Body& a, Body& b, double M) {
-    double GMm = Gm * M, f_x, f_y;
-    double dx = b.x - a.x, dy = b.y - a.y,
-           radius_cube_sqrt = pow(pow(dx, 2) + pow(dy, 2), 1.5) + 10e-7;
-    f_x = GMm * dx / radius_cube_sqrt;
-    f_y = GMm * dy / radius_cube_sqrt;
-    return { f_x, f_y };
-}
 
 void build_tree(QuadTree& tree)
 {
@@ -132,16 +124,6 @@ void build_tree(QuadTree& tree)
     if (gui) draw_points(1);
 }
 
-inline void move_nth_body(int i)
-{
-    Vector f = root.compute_force(bodies[i]);
-    Body &a = bodies[i], &new_a = new_bodies[i];
-    new_a.vx = a.vx + f.x * t / mass;
-    new_a.vy = a.vy + f.y * t / mass;
-    new_a.x  = a.x + new_a.vx * t;
-    new_a.y  = a.y + new_a.vy * t;
-}
-
 void* worker(void* param)
 {
     while (true) {
@@ -151,7 +133,13 @@ void* worker(void* param)
         int i = --queuing_jobs;
         pthread_mutex_unlock(&queuing);
         if (finsish) break;
-        move_nth_body(i);
+        Vector f = {0, 0};
+        root.compute_force(bodies[i], f);
+        Body &a = bodies[i], &new_a = new_bodies[i];
+        new_a.vx = a.vx + f.x * t / mass;
+        new_a.vy = a.vy + f.y * t / mass;
+        new_a.x  = a.x + new_a.vx * t;
+        new_a.y  = a.y + new_a.vy * t;
         pthread_mutex_lock(&queuing);
         num_done++;
         if (num_done >= num_body) pthread_cond_signal(&iter_fin);
