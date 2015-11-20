@@ -38,6 +38,6 @@ int main(int argc, char const **argv)
         Body* t = new_bodies; new_bodies = bodies; bodies = t;
         total_time += timeit(s);
     }
-    INFO("Run in " << total_time.count() / 1000 << " ms");
+    INFO("Run in " << total_time.count() / 1000 << " us");
     return 0;
 }

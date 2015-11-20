@@ -177,8 +177,8 @@ int main(int argc, char const **argv)
     pthread_cond_broadcast(&processing);
     pthread_mutex_unlock(&queuing);
     for (int j = 0; j < num_thread; ++j) pthread_join(workers[j], NULL);
-    INFO("- compute: " << total_time.count() / 1000 << " ms");
-    INFO("- build tree: " << build_time.count() / 1000 << " ms");
-    INFO("- i/o: " << io_time.count() / 1000 << " ms");
+    INFO("- compute: " << total_time.count() / 1000 << " us");
+    INFO("- build tree: " << build_time.count() / 1000 << " us");
+    INFO("- i/o: " << io_time.count() / 1000 << " us");
     return 0;
 }
