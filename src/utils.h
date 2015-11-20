@@ -57,7 +57,4 @@ void init_window(int);
 void draw_points(int);
 void draw_lines(double, double, double, double);
 
-void clear_display();
-void draw_colored_points();
-
 #endif

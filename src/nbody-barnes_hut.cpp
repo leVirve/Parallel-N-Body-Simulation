@@ -120,7 +120,7 @@ void build_tree(QuadTree& tree)
         _max = max(_max, max(t.x, t.y));
     }
     if (gui) {
-        clear_display();
+        draw_points(0);
         draw_lines(_min, _max, _max, _max);
         draw_lines(_min, _min, _max, _min);
         draw_lines(_min, _min, _min, _max);

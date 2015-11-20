@@ -79,11 +79,6 @@ void draw_points(int mode)
 
 void draw_lines(double a, double b, double c, double d)
 {
-    XDrawLine(display, window, gc, (a-xmin)*mf, (b-ymin)*mf, (c-xmin)*mf, (d-ymin)*mf);
-}
-
-void clear_display()
-{
-    XClearWindow(display, window);
     XSetForeground(display, gc, 0x3C084B);
+    XDrawLine(display, window, gc, (a-xmin)*mf, (b-ymin)*mf, (c-xmin)*mf, (d-ymin)*mf);
 }
