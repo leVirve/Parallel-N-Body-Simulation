@@ -2,7 +2,7 @@
 #include "utils.h"
 
 bool gui, finsish = false;
-double mass, t, Gmm;
+double mass, t, Gmm, angle;
 Body *bodies, *new_bodies;
 int num_thread, iters, num_body;
 
