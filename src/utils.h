@@ -23,6 +23,9 @@ using namespace std::chrono;
 #define INFO(str) do { } while ( false )
 #endif
 
+#define SQUARE(x) (x) * (x)
+#define CUBE(x) (x) * (x) * (x)
+
 struct Vector { double x, y;
     friend std::ostream& operator << (std::ostream& out, const Vector& b) {
         out << "(" << b.x << ", " << b.y << ")";
