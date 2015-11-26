@@ -14,12 +14,11 @@ int main(int argc, char const **argv)
     omp_set_num_threads(num_thread);
     high_resolution_clock::time_point s;
 
-    int tasks_per_thread = num_body / num_thread / 10;
     Gmm = G * mass * mass;
     for (int i = 0; i < iters; ++i) {
         if (gui) draw_points(0);
         s = high_resolution_clock::now();
-        #pragma omp parallel for schedule(dynamic, tasks_per_thread)
+        #pragma omp parallel for schedule(dynamic, 50)
         for (int j = 0; j < num_body; ++j) move_nth_body(j);
         Body* t = new_bodies; new_bodies = bodies; bodies = t;
         total_time += timeit(s);
