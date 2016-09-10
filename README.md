@@ -1,5 +1,8 @@
 # Parallel N-Body Simulation
 
+Multiple parallel and fast implementations of N-body simulation.
+
+
 ![Demo example](report/imgs/demo2.png)
 
 Here are four implementations:
