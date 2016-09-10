@@ -1,7 +1,15 @@
-# Parallel N-Body-Simulation
+# Parallel N-Body Simulation
+
+![Demo example](report/imgs/demo2.png)
 
 Here are four implementations:
-- N-body simulation in sequential
-- N-body simulation parallel in `OpenMP`
-- N-body simulation parallel in `pthread`
-- N-body simulation with `Barnes-Hut` algorithm and parallel in `pthread`
+- Sequential
+- Parallel in `OpenMP`
+- Parallel in `pthread`
+- Use `Barnes-Hut` algorithm and parallel in `pthread`
+
+# Compare each version
+![](report/imgs/strong_scalability.png)
+
+# Cost in each Barnes-Hut phase
+![](report/imgs/barnes_hut_phases.png)
